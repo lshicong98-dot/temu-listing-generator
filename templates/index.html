@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temu AI Listing 生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 30px 0;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+            background: linear-gradient(90deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.18);
+            padding: 40px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 5px;
+        }
+
+        .tab {
+            padding: 14px 30px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            margin-right: 15px;
+            border-radius: 8px 8px 0 0;
+            position: relative;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: linear-gradient(180deg, rgba(102, 126, 234, 0.05), transparent);
+        }
+
+        .tab:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .guide-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-left: 4px solid #667eea;
+        }
+
+        .guide-section h3 {
+            color: #1e293b;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .guide-section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .guide-section li {
+            padding: 8px 0;
+            padding-left: 24px;
+            position: relative;
+            color: #475569;
+            font-size: 0.95rem;
+        }
+
+        .guide-section li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #22c55e;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            background: #fafafa;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
+            background: white;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.15rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            color: #475569;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .result-section {
+            display: none;
+        }
+
+        .result-section.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+        }
+
+        .result-title {
+            color: #667eea;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(102, 126, 234, 0.08);
+            border-radius: 8px;
+        }
+
+        .result-content {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            min-height: 100px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-all;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .bullet-list {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .bullet-list li {
+            margin-bottom: 12px;
+            padding-left: 24px;
+            position: relative;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .bullet-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        .bullet-list li::before {
+            content: '★';
+            position: absolute;
+            left: 0;
+            color: #f59e0b;
+            font-size: 0.85rem;
+        }
+
+        .copy-btn {
+            float: right;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .copy-btn:hover {
+            background: #5a6fd6;
+            transform: translateY(-1px);
+        }
+
+        .copy-btn.copied {
+            background: #22c55e;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 22px;
+            height: 22px;
+            border: 2px solid white;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fff1f2;
+            border-left: 4px solid #ef4444;
+            padding: 14px 18px;
+            border-radius: 0 10px 10px 0;
+            margin-bottom: 18px;
+            color: #dc2626;
+            display: none;
+            font-size: 0.95rem;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.3s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .output-lang {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 1px solid #93c5fd;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            color: #1e40af;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .csv-template {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border: 1px solid #6ee7b7;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 22px;
+            font-size: 0.9rem;
+            color: #059669;
+        }
+
+        .csv-template code {
+            background: rgba(255,255,255,0.8);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85rem;
+        }
+
+        .file-upload {
+            border: 2px dashed #cbd5e1;
+            border-radius: 14px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .file-upload:hover,
+        .file-upload.dragover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+            border-style: solid;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-icon {
+            font-size: 56px;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .file-upload:hover .file-upload-icon {
+            transform: scale(1.1);
+        }
+
+        .file-upload-text {
+            font-size: 1.1rem;
+            color: #475569;
+            font-weight: 500;
+        }
+
+        .file-upload-hint {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-top: 10px;
+        }
+
+        .file-info {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 1px solid #86efac;
+            border-radius: 10px;
+            padding: 14px;
+            margin-top: 18px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .batch-progress {
+            margin-top: 18px;
+            display: none;
+        }
+
+        .batch-progress.show {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background: #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-text {
+            font-size: 0.95rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 25px 0;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+        }
+
+        .footer a {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .powered-by {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.15);
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .feature-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .card {
+                padding: 25px;
+            }
+
+            .tab {
+                padding: 12px 18px;
+                margin-right: 8px;
+            }
+
+            .result-title {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Temu AI Listing 生成器</h1>
+            <p>智能生成优化的英文商品标题和描述，助力您的跨境电商</p>
+        </div>
+
+        <div class="card">
+            <div class="error-message" id="error-message"></div>
+
+            <div class="tabs">
+                <div class="tab active" id="single-tab">单个生成</div>
+                <div class="tab" id="batch-tab">批量处理</div>
+            </div>
+
+            <div id="single-panel">
+                <div class="guide-section">
+                    <h3>📖 使用说明</h3>
+                    <ul>
+                        <li><strong>商品名称</strong>：输入您的商品名称，如 "Wireless Bluetooth Earbuds"</li>
+                        <li><strong>核心卖点</strong>：用逗号分隔多个卖点，如 "Noise Cancelling, 30H Battery, Waterproof"</li>
+                        <li><strong>目标市场</strong>：选择目标销售市场，帮助AI优化关键词</li>
+                        <li><strong>SEO优化</strong>：系统会自动生成符合Temu/Amazon规范的标题和描述</li>
+                    </ul>
+                </div>
+
+                <div class="form-group">
+                    <label>📦 商品名称 <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="product-name" placeholder="例如：Wireless Bluetooth Earbuds">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>✨ 核心卖点</label>
+                        <input type="text" id="selling-points" placeholder="例如：Noise Cancelling, 30H Battery, Waterproof">
+                    </div>
+                    <div class="form-group">
+                        <label>🌍 目标市场</label>
+                        <select id="target-market">
+                            <option value="">请选择市场</option>
+                            <option value="USA">美国</option>
+                            <option value="Europe">欧洲</option>
+                            <option value="Southeast Asia">东南亚</option>
+                            <option value="Global">全球</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn-secondary" id="sample-btn">
+                    📋 使用示例数据
+                </button>
+
+                <button class="btn" id="generate-btn">
+                    <span id="btn-text">🚀 生成英文 Listing</span>
+                    <span id="btn-loading" class="loading" style="display: none;"></span>
+                </button>
+            </div>
+
+            <div id="batch-panel" style="display: none;">
+                <div class="guide-section">
+                    <h3>📖 批量处理说明</h3>
+                    <ul>
+                        <li>准备CSV文件，包含列：product_name, selling_points, target_market</li>
+                        <li>每个商品一行，卖点用逗号分隔</li>
+                        <li>上传后自动生成所有商品的listing</li>
+                        <li>结果以ZIP文件形式下载</li>
+                    </ul>
+                </div>
+
+                <div class="csv-template">
+                    <strong>📋 CSV文件格式：</strong><br>
+                    文件必须包含以下列：<code>product_name</code>, <code>selling_points</code>, <code>target_market</code><br>
+                    示例：<br>
+                    <code>product_name,selling_points,target_market</code><br>
+                    <code>Wireless Earbuds,Noise Cancelling,30H Battery,USA</code><br>
+                    <code>USB Cable,Fast Charging,Durable,Global</code>
+                </div>
+
+                <div class="file-upload" id="file-upload">
+                    <input type="file" id="csv-file" accept=".csv">
+                    <div class="file-upload-icon">📁</div>
+                    <div class="file-upload-text">点击或拖拽上传CSV文件</div>
+                    <div class="file-upload-hint">支持 .csv 格式，最大16MB</div>
+                </div>
+
+                <div class="file-info" id="file-info">
+                    <strong>已选择文件：</strong><span id="file-name"></span>
+                </div>
+
+                <button class="btn" id="batch-generate-btn" disabled>
+                    <span id="batch-btn-text">📦 批量生成并下载</span>
+                    <span id="batch-btn-loading" class="loading" style="display: none;"></span>
+                </button>
+
+                <div class="batch-progress" id="batch-progress">
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-text" id="progress-text">正在处理...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card result-card result-section" id="result-section">
+            <div class="output-lang">🌐 输出语言：English（英文）<span class="feature-badge">SEO优化</span></div>
+            
+            <div class="result-title">
+                📝 Product Title（商品标题）
+                <button class="copy-btn" id="copy-title">📋 复制</button>
+            </div>
+            <div class="result-content" id="result-title"></div>
+
+            <div class="result-title" style="margin-top: 25px;">
+                ✅ Bullet Points（核心卖点）
+                <button class="copy-btn" id="copy-bullets">📋 复制</button>
+            </div>
+            <ul class="bullet-list" id="result-bullets"></ul>
+
+            <div class="result-title" style="margin-top: 25px;">
+                📄 Description（详细描述）
+                <button class="copy-btn" id="copy-description">📋 复制</button>
+            </div>
+            <div class="result-content" id="result-description"></div>
+        </div>
+
+        <div class="footer">
+            <div class="powered-by">
+                ⚡ Powered by DeepSeek AI
+            </div>
+            <p style="margin-top: 15px; opacity: 0.8;">© 2024 Temu Listing Generator. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        const singleTab = document.getElementById('single-tab');
+        const batchTab = document.getElementById('batch-tab');
+        const singlePanel = document.getElementById('single-panel');
+        const batchPanel = document.getElementById('batch-panel');
+
+        singleTab.addEventListener('click', () => {
+            singleTab.classList.add('active');
+            batchTab.classList.remove('active');
+            singlePanel.style.display = 'block';
+            batchPanel.style.display = 'none';
+        });
+
+        batchTab.addEventListener('click', () => {
+            batchTab.classList.add('active');
+            singleTab.classList.remove('active');
+            batchPanel.style.display = 'block';
+            singlePanel.style.display = 'none';
+        });
+
+        const generateBtn = document.getElementById('generate-btn');
+        const sampleBtn = document.getElementById('sample-btn');
+        const productNameInput = document.getElementById('product-name');
+        const sellingPointsInput = document.getElementById('selling-points');
+        const targetMarketSelect = document.getElementById('target-market');
+        const resultSection = document.getElementById('result-section');
+        const resultTitle = document.getElementById('result-title');
+        const resultBullets = document.getElementById('result-bullets');
+        const resultDescription = document.getElementById('result-description');
+        const errorMessage = document.getElementById('error-message');
+        const btnText = document.getElementById('btn-text');
+        const btnLoading = document.getElementById('btn-loading');
+
+        sampleBtn.addEventListener('click', () => {
+            productNameInput.value = 'Wireless Bluetooth Earbuds';
+            sellingPointsInput.value = 'Noise Cancelling, 30H Battery Life, IPX7 Waterproof';
+            targetMarketSelect.value = 'USA';
+        });
+
+        generateBtn.addEventListener('click', async () => {
+            const productName = productNameInput.value.trim();
+            const sellingPoints = sellingPointsInput.value.trim();
+            const targetMarket = targetMarketSelect.value;
+
+            if (!productName) {
+                showError('请输入商品名称');
+                return;
+            }
+
+            generateBtn.disabled = true;
+            btnText.textContent = '生成中...';
+            btnLoading.style.display = 'inline-block';
+            hideError();
+            resultSection.classList.remove('show');
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        product_name: productName,
+                        selling_points: sellingPoints,
+                        target_market: targetMarket
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultTitle.textContent = data.title || 'No title generated';
+                    
+                    resultBullets.innerHTML = '';
+                    if (data.bullets && Array.isArray(data.bullets)) {
+                        data.bullets.forEach((bullet, index) => {
+                            const li = document.createElement('li');
+                            li.textContent = bullet;
+                            resultBullets.appendChild(li);
+                        });
+                    } else {
+                        const li = document.createElement('li');
+                        li.textContent = 'No bullet points generated';
+                        resultBullets.appendChild(li);
+                    }
+                    
+                    resultDescription.textContent = data.description || 'No description generated';
+                    resultSection.classList.add('show');
+                } else {
+                    showError(data.error || '生成失败');
+                }
+            } catch (error) {
+                showError('网络请求失败，请检查网络连接');
+            } finally {
+                generateBtn.disabled = false;
+                btnText.textContent = '🚀 生成英文 Listing';
+                btnLoading.style.display = 'none';
+            }
+        });
+
+        const fileUpload = document.getElementById('file-upload');
+        const csvFile = document.getElementById('csv-file');
+        const fileInfo = document.getElementById('file-info');
+        const fileName = document.getElementById('file-name');
+        const batchGenerateBtn = document.getElementById('batch-generate-btn');
+        const batchBtnText = document.getElementById('batch-btn-text');
+        const batchBtnLoading = document.getElementById('batch-btn-loading');
+        const batchProgress = document.getElementById('batch-progress');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+
+        fileUpload.addEventListener('click', () => {
+            csvFile.click();
+        });
+
+        fileUpload.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUpload.classList.add('dragover');
+        });
+
+        fileUpload.addEventListener('dragleave', () => {
+            fileUpload.classList.remove('dragover');
+        });
+
+        fileUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUpload.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        csvFile.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.name.endsWith('.csv')) {
+                showError('请选择CSV格式的文件');
+                return;
+            }
+            
+            fileName.textContent = file.name;
+            fileInfo.classList.add('show');
+            batchGenerateBtn.disabled = false;
+            hideError();
+        }
+
+        batchGenerateBtn.addEventListener('click', async () => {
+            const file = csvFile.files[0];
+
+            if (!file) {
+                showError('请选择CSV文件');
+                return;
+            }
+
+            batchGenerateBtn.disabled = true;
+            batchBtnText.textContent = '生成中...';
+            batchBtnLoading.style.display = 'inline-block';
+            batchProgress.classList.add('show');
+            progressFill.style.width = '0%';
+            hideError();
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/batch_generate', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'listings.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    progressFill.style.width = '100%';
+                    progressText.textContent = '生成完成！';
+                    
+                    setTimeout(() => {
+                        batchProgress.classList.remove('show');
+                        batchGenerateBtn.disabled = false;
+                        batchBtnText.textContent = '📦 批量生成并下载';
+                        batchBtnLoading.style.display = 'none';
+                        csvFile.value = '';
+                        fileInfo.classList.remove('show');
+                    }, 1500);
+                } else {
+                    const data = await response.json();
+                    showError(data.error || '批量生成失败');
+                    batchProgress.classList.remove('show');
+                    batchGenerateBtn.disabled = false;
+                    batchBtnText.textContent = '📦 批量生成并下载';
+                    batchBtnLoading.style.display = 'none';
+                }
+            } catch (error) {
+                showError('网络请求失败，请检查网络连接');
+                batchProgress.classList.remove('show');
+                batchGenerateBtn.disabled = false;
+                batchBtnText.textContent = '📦 批量生成并下载';
+                batchBtnLoading.style.display = 'none';
+            }
+        });
+
+        document.getElementById('copy-title').addEventListener('click', async () => {
+            await copyToClipboard(resultTitle.textContent, 'copy-title');
+        });
+
+        document.getElementById('copy-bullets').addEventListener('click', async () => {
+            const bulletsText = Array.from(resultBullets.querySelectorAll('li'))
+                .map((li, i) => `${i + 1}. ${li.textContent}`)
+                .join('\n');
+            await copyToClipboard(bulletsText, 'copy-bullets');
+        });
+
+        document.getElementById('copy-description').addEventListener('click', async () => {
+            await copyToClipboard(resultDescription.textContent, 'copy-description');
+        });
+
+        async function copyToClipboard(text, btnId) {
+            try {
+                await navigator.clipboard.writeText(text);
+                const btn = document.getElementById(btnId);
+                btn.innerHTML = '✓ 已复制';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = '📋 复制';
+                    btn.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                alert('复制失败，请手动复制');
+            }
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+            }, 5000);
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('show');
+        }
+    </script>
+</body>
+</html>
